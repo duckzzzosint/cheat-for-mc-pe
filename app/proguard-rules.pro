@@ -1,0 +1,2 @@
+-keep class com.toker.mccheat.** { *; }
+-keepclassmembers class * { native <methods>; }
