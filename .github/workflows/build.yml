@@ -19,18 +19,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download real Gradle wrapper (gradlew + jar)
+      - name: Download Gradle 8.5 wrapper
         run: |
-          # Download the official gradlew script and wrapper jar from Gradle 8.9
           curl -fsSL \
-            "https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradlew" \
+            "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradlew" \
             -o gradlew
           mkdir -p gradle/wrapper
           curl -fsSL \
-            "https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
+            "https://github.com/gradle/gradle/raw/v8.5.0/gradle/wrapper/gradle-wrapper.jar" \
             -o gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
-          echo "gradlew OK: $(head -1 gradlew)"
 
       - name: Setup Android SDK + NDK + CMake
         run: |
@@ -45,7 +43,6 @@ jobs:
           NDK="$SDK/ndk/26.3.11579264"
           echo "ANDROID_NDK_HOME=$NDK" >> $GITHUB_ENV
           echo "NDK_HOME=$NDK"         >> $GITHUB_ENV
-          echo "NDK ready: $NDK"
 
       - name: Cache Gradle + CMake
         uses: actions/cache@v4
@@ -61,17 +58,17 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME"     > local.properties
           echo "ndk.dir=$ANDROID_NDK_HOME" >> local.properties
-          cat local.properties
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
         env:
           ANDROID_HOME:     ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          GRADLE_OPTS:      "-Xmx2g -Xms512m"
 
       - name: Find APK
         if: always()
-        run: find . -name "*.apk" 2>/dev/null || echo "No APK found"
+        run: find . -name "*.apk" 2>/dev/null || echo "No APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

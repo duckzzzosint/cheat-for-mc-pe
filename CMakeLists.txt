@@ -6,13 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(FetchContent)
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
-# ── ImGui ─────────────────────────────────────────────────────────────────────
+# ── ImGui v1.90.4 ─────────────────────────────────────────────────────────────
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG        v1.90.4
     GIT_SHALLOW    TRUE
+    GIT_PROGRESS   FALSE
 )
 FetchContent_Populate(imgui)
 
@@ -24,19 +26,21 @@ set(IMGUI_SRC
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-# ── Dobby hook engine ─────────────────────────────────────────────────────────
-set(DOBBY_BUILD_EXAMPLE        OFF CACHE BOOL "" FORCE)
-set(DOBBY_BUILD_SHARED_LIBRARY OFF CACHE BOOL "" FORCE)
-set(DOBBY_GENERATE_SHARED      OFF CACHE BOOL "" FORCE)
+# ── Dobby — pinned commit (master can break) ──────────────────────────────────
+set(DOBBY_BUILD_EXAMPLE         OFF CACHE BOOL "" FORCE)
+set(DOBBY_BUILD_SHARED_LIBRARY  OFF CACHE BOOL "" FORCE)
+set(DOBBY_GENERATE_SHARED       OFF CACHE BOOL "" FORCE)
+set(DOBBY_DEBUG                 OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     dobby
     GIT_REPOSITORY https://github.com/jmpews/Dobby.git
-    GIT_TAG        master
-    GIT_SHALLOW    TRUE
+    GIT_TAG        233b5e5
+    GIT_SHALLOW    FALSE
+    GIT_PROGRESS   FALSE
 )
 FetchContent_MakeAvailable(dobby)
 
-# ── libcheat.so — payload injected into Minecraft ─────────────────────────────
+# ── libcheat.so ───────────────────────────────────────────────────────────────
 add_library(cheat SHARED
     native/src/main.cpp
     native/src/hooks.cpp
@@ -64,25 +68,22 @@ target_link_libraries(cheat
     dobby
 )
 
-# ── mc_injector — standalone ptrace injector executable ───────────────────────
+# ── mc_injector standalone binary ─────────────────────────────────────────────
 add_executable(mc_injector native/src/injector.cpp)
 target_include_directories(mc_injector PRIVATE native/src)
 target_compile_options(mc_injector PRIVATE -O2 -fPIE)
 target_link_options(mc_injector PRIVATE -fPIE -pie)
 target_link_libraries(mc_injector log)
 
-# ── Copy both to assets so they get packaged into the APK ─────────────────────
+# ── Copy both into APK assets ─────────────────────────────────────────────────
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/app/src/main/assets)
 file(MAKE_DIRECTORY ${ASSETS_DIR})
 
 add_custom_command(TARGET mc_injector POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:mc_injector> ${ASSETS_DIR}/mc_injector
-    COMMENT "-> assets/mc_injector"
 )
-
 add_custom_command(TARGET cheat POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:cheat> ${ASSETS_DIR}/libcheat.so
-    COMMENT "-> assets/libcheat.so"
 )
