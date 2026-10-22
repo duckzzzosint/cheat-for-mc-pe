@@ -19,19 +19,31 @@ android {
 
         externalNativeBuild {
             cmake {
-                cppFlags  "-std=c++17 -O2 -fvisibility=hidden -fno-rtti"
-                arguments "-DANDROID_STL=c++_shared",
-                          "-DANDROID_PLATFORM=android-26",
-                          "-DFETCHCONTENT_QUIET=OFF",
-                          "-DCMAKE_BUILD_TYPE=Debug"
+                cppFlags "-std=c++17 -O2 -fvisibility=hidden -fno-rtti"
+
+                // Read pre-cloned dependency paths passed via -P from CLI
+                def imgui = project.findProperty('imguiSrc') ?: ''
+                def dobby  = project.findProperty('dobbySrc') ?: ''
+
+                def cmakeArgs = [
+                    "-DANDROID_STL=c++_shared",
+                    "-DANDROID_PLATFORM=android-26",
+                    "-DFETCHCONTENT_QUIET=OFF",
+                    "-DCMAKE_BUILD_TYPE=Debug"
+                ]
+                // If pre-cloned dirs exist, tell FetchContent to use them (no download)
+                if (imgui) cmakeArgs << "-DFETCHCONTENT_SOURCE_DIR_IMGUI=${imgui}"
+                if (dobby)  cmakeArgs << "-DFETCHCONTENT_SOURCE_DIR_DOBBY=${dobby}"
+
+                arguments(*cmakeArgs)
             }
         }
     }
 
     externalNativeBuild {
         cmake {
-            path    "../CMakeLists.txt"
-            version "3.22.1"
+            path "../CMakeLists.txt"
+            // no version — use system cmake (ubuntu-22.04 has 3.22+)
         }
     }
 
@@ -53,7 +65,6 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // AGP 8.x: packagingOptions -> packaging
     packaging {
         jniLibs {
             useLegacyPackaging = true

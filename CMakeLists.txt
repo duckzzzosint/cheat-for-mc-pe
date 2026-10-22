@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.18)
 project(mccheat CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -6,15 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(FetchContent)
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+# If FETCHCONTENT_SOURCE_DIR_IMGUI / _DOBBY are set (via -D from Gradle),
+# FetchContent uses those local dirs and skips all git operations.
 
-# ── ImGui v1.90.4 ─────────────────────────────────────────────────────────────
+# ── ImGui ─────────────────────────────────────────────────────────────────────
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG        v1.90.4
     GIT_SHALLOW    TRUE
-    GIT_PROGRESS   FALSE
 )
 FetchContent_Populate(imgui)
 
@@ -26,7 +26,7 @@ set(IMGUI_SRC
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-# ── Dobby — pinned commit (master can break) ──────────────────────────────────
+# ── Dobby ─────────────────────────────────────────────────────────────────────
 set(DOBBY_BUILD_EXAMPLE         OFF CACHE BOOL "" FORCE)
 set(DOBBY_BUILD_SHARED_LIBRARY  OFF CACHE BOOL "" FORCE)
 set(DOBBY_GENERATE_SHARED       OFF CACHE BOOL "" FORCE)
@@ -34,9 +34,8 @@ set(DOBBY_DEBUG                 OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     dobby
     GIT_REPOSITORY https://github.com/jmpews/Dobby.git
-    GIT_TAG        233b5e5
-    GIT_SHALLOW    FALSE
-    GIT_PROGRESS   FALSE
+    GIT_TAG        master
+    GIT_SHALLOW    TRUE
 )
 FetchContent_MakeAvailable(dobby)
 
@@ -63,27 +62,23 @@ target_compile_definitions(cheat PRIVATE
     IMGUI_DEFINE_MATH_OPERATORS
 )
 
-target_link_libraries(cheat
-    android log dl EGL GLESv3
-    dobby
-)
+target_link_libraries(cheat android log dl EGL GLESv3 dobby)
 
-# ── mc_injector standalone binary ─────────────────────────────────────────────
+# ── mc_injector ───────────────────────────────────────────────────────────────
 add_executable(mc_injector native/src/injector.cpp)
 target_include_directories(mc_injector PRIVATE native/src)
 target_compile_options(mc_injector PRIVATE -O2 -fPIE)
 target_link_options(mc_injector PRIVATE -fPIE -pie)
 target_link_libraries(mc_injector log)
 
-# ── Copy both into APK assets ─────────────────────────────────────────────────
+# ── Copy to assets ────────────────────────────────────────────────────────────
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/app/src/main/assets)
 file(MAKE_DIRECTORY ${ASSETS_DIR})
 
 add_custom_command(TARGET mc_injector POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:mc_injector> ${ASSETS_DIR}/mc_injector
-)
+        $<TARGET_FILE:mc_injector> ${ASSETS_DIR}/mc_injector)
+
 add_custom_command(TARGET cheat POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:cheat> ${ASSETS_DIR}/libcheat.so
-)
+        $<TARGET_FILE:cheat> ${ASSETS_DIR}/libcheat.so)
