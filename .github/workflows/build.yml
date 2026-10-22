@@ -10,25 +10,28 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
 
       - name: Install NDK + CMake
         run: |
-          sdkmanager "ndk;${NDK_VERSION}" "cmake;3.22.1"
+          echo "y" | sdkmanager --install "ndk;${NDK_VERSION}" "cmake;3.22.1" 2>&1 | tail -5
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> $GITHUB_ENV
+          echo "NDK installed: $(ls $ANDROID_HOME/ndk/)"
 
       - name: Cache Gradle + CMake deps
         uses: actions/cache@v4
@@ -41,14 +44,21 @@ jobs:
           restore-keys: build-${{ runner.os }}-
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.5'
+          gradle-version: '8.9'
 
       - name: Build debug APK
-        run: gradle assembleDebug
+        run: |
+          gradle assembleDebug \
+            -PANDROID_NDK_HOME="$ANDROID_NDK_HOME" \
+            --stacktrace \
+            --info 2>&1 | tail -80
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+
+      - name: Show APK
+        run: find . -name "*.apk" 2>/dev/null || echo "No APK found"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
