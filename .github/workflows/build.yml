@@ -26,25 +26,20 @@ jobs:
             "https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
             -o gradle/wrapper/gradle-wrapper.jar
           chmod +x gradlew
-          echo "Wrapper jar: $(ls -lh gradle/wrapper/gradle-wrapper.jar)"
 
       - name: Setup Android SDK + NDK + CMake
         run: |
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           echo "ANDROID_HOME=$SDK" >> $GITHUB_ENV
-
           yes | $SDK/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-
           $SDK/cmdline-tools/latest/bin/sdkmanager \
             "ndk;26.3.11579264" \
             "cmake;3.22.1" \
             "platforms;android-34" \
             "build-tools;34.0.0"
-
           NDK="$SDK/ndk/26.3.11579264"
           echo "ANDROID_NDK_HOME=$NDK" >> $GITHUB_ENV
           echo "NDK_HOME=$NDK"         >> $GITHUB_ENV
-          ls "$NDK" | head -3
 
       - name: Cache Gradle + CMake
         uses: actions/cache@v4
@@ -60,17 +55,26 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME"     > local.properties
           echo "ndk.dir=$ANDROID_NDK_HOME" >> local.properties
-          cat local.properties
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace 2>&1 | tail -150
+        run: ./gradlew assembleDebug --stacktrace
         env:
           ANDROID_HOME:     ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
+      - name: Find APK
+        run: |
+          echo "=== Searching for APK ==="
+          find . -name "*.apk" 2>/dev/null
+          echo "=== build/outputs ==="
+          find . -path "*/build/outputs/*" 2>/dev/null | head -20
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: mc-cheat-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
+          name: mc-cheat-apk
+          path: |
+            app/build/outputs/apk/**/*.apk
+            app/build/outputs/**/*.apk
+          if-no-files-found: warn
           retention-days: 30
