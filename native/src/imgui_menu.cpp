@@ -55,7 +55,7 @@ void ImGuiInitialize(int w, int h) {
     c[ImGuiCol_Button]        = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     c[ImGuiCol_ButtonHovered] = ImVec4(0.50f, 0.85f, 0.00f, 0.60f);
     c[ImGuiCol_Tab]           = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-    c[ImGuiCol_TabSelected]   = ImVec4(0.50f, 0.85f, 0.00f, 1.00f);
+    c[ImGuiCol_TabActive]   = ImVec4(0.50f, 0.85f, 0.00f, 1.00f);
     c[ImGuiCol_Header]        = ImVec4(0.20f, 0.20f, 0.20f, 0.90f);
     c[ImGuiCol_HeaderHovered] = ImVec4(0.50f, 0.85f, 0.00f, 0.50f);
     c[ImGuiCol_Separator]     = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);

@@ -71,7 +71,6 @@ jobs:
       - name: Write local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME"     > local.properties
-          echo "ndk.dir=$ANDROID_NDK_HOME" >> local.properties
 
       - name: Build debug APK
         run: |
