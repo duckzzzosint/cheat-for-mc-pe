@@ -4,6 +4,7 @@ plugins {
 
 android {
     namespace 'com.toker.mccheat'
+    ndkVersion "26.3.11579264"
     compileSdk 34
 
     defaultConfig {
