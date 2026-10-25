@@ -6,25 +6,35 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(FetchContent)
-# If FETCHCONTENT_SOURCE_DIR_IMGUI / _DOBBY are set (via -D from Gradle),
-# FetchContent uses those local dirs and skips all git operations.
 
 # ── ImGui ─────────────────────────────────────────────────────────────────────
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.90.4
-    GIT_SHALLOW    TRUE
-)
-FetchContent_Populate(imgui)
+# IMGUI_DIR is passed from CI via -DIMGUI_DIR=<pre-cloned path>.
+# Fallback: FetchContent download (local builds only).
+if(DEFINED IMGUI_DIR AND EXISTS "${IMGUI_DIR}/imgui.cpp")
+    message(STATUS "ImGui: using pre-cloned dir ${IMGUI_DIR}")
+    set(IMGUI_ROOT "${IMGUI_DIR}")
+else()
+    message(STATUS "ImGui: fetching from git...")
+    FetchContent_Declare(imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG        v1.90.4
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_Populate(imgui)
+    set(IMGUI_ROOT "${imgui_SOURCE_DIR}")
+endif()
+
+if(NOT EXISTS "${IMGUI_ROOT}/imgui.cpp")
+    message(FATAL_ERROR "ImGui not found at ${IMGUI_ROOT}")
+endif()
+message(STATUS "ImGui root: ${IMGUI_ROOT}")
 
 set(IMGUI_SRC
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/backends
-    ${dobby_SOURCE_DIR}/include/imgui_impl_opengl3.cpp
+    ${IMGUI_ROOT}/imgui.cpp
+    ${IMGUI_ROOT}/imgui_draw.cpp
+    ${IMGUI_ROOT}/imgui_tables.cpp
+    ${IMGUI_ROOT}/imgui_widgets.cpp
+    ${IMGUI_ROOT}/backends/imgui_impl_opengl3.cpp
 )
 
 # ── Dobby ─────────────────────────────────────────────────────────────────────
@@ -32,8 +42,7 @@ set(DOBBY_BUILD_EXAMPLE         OFF CACHE BOOL "" FORCE)
 set(DOBBY_BUILD_SHARED_LIBRARY  OFF CACHE BOOL "" FORCE)
 set(DOBBY_GENERATE_SHARED       OFF CACHE BOOL "" FORCE)
 set(DOBBY_DEBUG                 OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-    dobby
+FetchContent_Declare(dobby
     GIT_REPOSITORY https://github.com/jmpews/Dobby.git
     GIT_TAG        master
     GIT_SHALLOW    TRUE
@@ -54,8 +63,8 @@ add_library(cheat SHARED
 
 target_include_directories(cheat PRIVATE
     native/src
-    ${imgui_SOURCE_DIR}
-    ${imgui_SOURCE_DIR}/backends
+    ${IMGUI_ROOT}
+    ${IMGUI_ROOT}/backends
     ${dobby_SOURCE_DIR}/include
 )
 

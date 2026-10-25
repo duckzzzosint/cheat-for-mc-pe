@@ -4,8 +4,8 @@ plugins {
 
 android {
     namespace 'com.toker.mccheat'
-    ndkVersion "26.3.11579264"
     compileSdk 34
+    ndkVersion "26.3.11579264"
 
     defaultConfig {
         applicationId "com.toker.mccheat"
@@ -14,29 +14,24 @@ android {
         versionCode 1
         versionName "1.0"
 
-        ndk {
-            abiFilters 'arm64-v8a'
-        }
+        ndk { abiFilters 'arm64-v8a' }
 
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++17 -O2 -fvisibility=hidden -fno-rtti"
 
-                // Read pre-cloned dependency paths passed via -P from CLI
                 def imgui = project.findProperty('imguiSrc') ?: ''
                 def dobby  = project.findProperty('dobbySrc') ?: ''
 
-                def cmakeArgs = [
+                def args = [
                     "-DANDROID_STL=c++_shared",
                     "-DANDROID_PLATFORM=android-26",
-                    "-DFETCHCONTENT_QUIET=OFF",
-                    "-DCMAKE_BUILD_TYPE=Debug"
+                    "-DFETCHCONTENT_QUIET=OFF"
                 ]
-                // If pre-cloned dirs exist, tell FetchContent to use them (no download)
-                if (imgui) cmakeArgs << "-DFETCHCONTENT_SOURCE_DIR_IMGUI=${imgui}"
-                if (dobby)  cmakeArgs << "-DFETCHCONTENT_SOURCE_DIR_DOBBY=${dobby}"
+                if (imgui) args << "-DIMGUI_DIR=${imgui}"
+                if (dobby)  args << "-DFETCHCONTENT_SOURCE_DIR_DOBBY=${dobby}"
 
-                arguments(*cmakeArgs)
+                arguments args.toArray(new String[0])
             }
         }
     }
@@ -44,7 +39,6 @@ android {
     externalNativeBuild {
         cmake {
             path "../CMakeLists.txt"
-            // no version — use system cmake (ubuntu-22.04 has 3.22+)
         }
     }
 
@@ -67,9 +61,7 @@ android {
     }
 
     packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
+        jniLibs { useLegacyPackaging = true }
     }
 
     sourceSets {
